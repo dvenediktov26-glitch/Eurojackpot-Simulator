@@ -1,9 +1,11 @@
 import type { SimulationRequest, SimulationResponse } from "../types/simulation";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export async function runSimulation(
   payload: SimulationRequest
 ): Promise<SimulationResponse> {
-  const response = await fetch("http://127.0.0.1:8010/simulate", {
+  const response = await fetch(`${API_URL}/simulate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -30,7 +32,7 @@ export async function runSimulation(
         }
       }
     } catch {
-      // ignore JSON parsing errors and keep default message
+      // ignore JSON parsing errors
     }
 
     throw new Error(message);
