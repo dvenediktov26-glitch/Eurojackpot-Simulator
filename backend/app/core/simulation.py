@@ -1,3 +1,13 @@
+"""Top-level simulation loop for the production backend.
+
+This module ties all modelling pieces together:
+- the official draw generation,
+- prize-pool construction,
+- jackpot rollover and caps,
+- shared winnings,
+- and final statistics aggregation.
+"""
+
 import random
 from collections import Counter
 from typing import Literal
@@ -7,7 +17,6 @@ from app.core.evaluator import evaluate_ticket
 from app.core.generator import generate_draw
 from app.core.models import Ticket
 from app.core.prize_pool import (
-    CLASS_ALLOCATION_SHARES,
     JACKPOT_CAP,
     PRIZE_POOL_SHARE,
     SECOND_TIER_CAP,
@@ -31,8 +40,16 @@ def run_simulation(
     market_model: MarketModel = "uniform",
     tickets_sold_per_draw: int = DEFAULT_TICKETS_SOLD,
 ) -> SimulationStats:
+    """Simulate a batch of Eurojackpot draws for one fixed user ticket.
+
+    The frontend uses this function in a batched way: every API request buys a
+    number of tickets with the same user-selected numbers and accumulates the
+    returned totals on the client side.
+    """
     rng = random.Random(seed)
 
+    # Per-class aggregations are stored separately so the frontend can build the
+    # prize distribution table and chart.
     prize_class_counts: Counter[str] = Counter()
     actual_total_won_by_class: Counter[str] = Counter()
     total_co_winners_by_class: Counter[str] = Counter()
@@ -45,6 +62,7 @@ def run_simulation(
     total_ticket_sales = 0.0
     total_prize_pool = 0.0
 
+    # Jackpot state is carried from one draw into the next.
     jackpot_carryover = 0.0
     jackpot_hits = 0
     max_jackpot_fund_observed = 0.0
@@ -63,16 +81,18 @@ def run_simulation(
         total_prize_pool += prize_pool
         total_reserve_fund += reserve_fund
 
-        # Базовый jackpot + carryover
+        # Start with the nominal jackpot share for this draw and add any unpaid
+        # jackpot money rolled over from previous draws.
         jackpot_available = base_class_funds[JACKPOT_CLASS_KEY] + jackpot_carryover
 
-        # Применяем cap к Class 1, overflow -> Class 2
+        # If the jackpot exceeds the cap, the overflow is redirected to Class 2.
         overflow_to_class2 = max(0.0, jackpot_available - JACKPOT_CAP)
         effective_jackpot_fund = min(jackpot_available, JACKPOT_CAP)
 
         class2_available = base_class_funds[SECOND_CLASS_KEY] + overflow_to_class2
 
-        # Применяем cap к Class 2, overflow -> Class 3
+        # The same logic is applied one tier lower: if Class 2 also exceeds the
+        # cap, the remaining amount is redirected to Class 3.
         overflow_to_class3 = max(0.0, class2_available - SECOND_TIER_CAP)
         effective_class2_fund = min(class2_available, SECOND_TIER_CAP)
         effective_class3_fund = base_class_funds[THIRD_CLASS_KEY] + overflow_to_class3
@@ -82,12 +102,13 @@ def run_simulation(
         total_class2_overflow_to_class3 += overflow_to_class3
         max_jackpot_fund_observed = max(max_jackpot_fund_observed, effective_jackpot_fund)
 
+        # The effective class funds are the actual amounts that can be won in
+        # this draw after rollover and cap logic has been applied.
         effective_class_funds = dict(base_class_funds)
         effective_class_funds[JACKPOT_CLASS_KEY] = effective_jackpot_fund
         effective_class_funds[SECOND_CLASS_KEY] = effective_class2_fund
         effective_class_funds[THIRD_CLASS_KEY] = effective_class3_fund
 
-        # Для таблицы классов копим именно эффективные фонды, которые реально доступны в тираже
         for prize_class, class_fund in effective_class_funds.items():
             total_class_fund_by_class[prize_class] += class_fund
 
@@ -120,6 +141,8 @@ def run_simulation(
             if result.prize_class == JACKPOT_CLASS_KEY:
                 jackpot_hits += 1
 
+        # If the jackpot was not won, the capped jackpot amount becomes the next
+        # draw's carryover; otherwise the rollover resets to zero.
         if jackpot_won_this_draw:
             jackpot_carryover = 0.0
         else:

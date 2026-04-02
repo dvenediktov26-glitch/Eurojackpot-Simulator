@@ -1,3 +1,9 @@
+"""Service layer between the HTTP API and the simulation core.
+
+This module converts validated API payloads into core objects, runs the
+simulation, and reshapes the output so it is convenient for the frontend.
+"""
+
 from app.core.models import Ticket
 from app.core.simulation import run_simulation
 from app.schemas import (
@@ -7,6 +13,7 @@ from app.schemas import (
     UserTicketInput,
 )
 
+# Human-readable labels used by the frontend.
 PRIZE_CLASS_DEFINITIONS = [
     {"key": "Class 1", "label": "5 + 2 (Jackpot)"},
     {"key": "Class 2", "label": "5 + 1"},
@@ -24,6 +31,7 @@ PRIZE_CLASS_DEFINITIONS = [
 
 
 def _to_ticket(ticket_input: UserTicketInput) -> Ticket:
+    """Convert an API ticket model into the immutable core Ticket object."""
     return Ticket(
         main_numbers=frozenset(ticket_input.main_numbers),
         euro_numbers=frozenset(ticket_input.euro_numbers),
@@ -31,6 +39,7 @@ def _to_ticket(ticket_input: UserTicketInput) -> Ticket:
 
 
 def simulate_lottery(payload: SimulationRequest) -> SimulationResponse:
+    """Run the core simulation and adapt the result for API consumers."""
     user_ticket = _to_ticket(payload.user_ticket)
 
     stats = run_simulation(

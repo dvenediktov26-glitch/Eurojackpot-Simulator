@@ -1,3 +1,5 @@
+"""Legacy ticket evaluation logic used by the console prototype."""
+
 from app.models import Ticket, Draw, EvaluationResult
 from app.rules import PRIZE_CLASSES
 

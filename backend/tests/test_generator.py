@@ -1,3 +1,9 @@
+"""Tests for ticket and draw generation helpers.
+
+These tests focus on structural correctness: valid ranges, uniqueness, and the
+behaviour of weighted strategies.
+"""
+
 import random
 
 from app.core.generator import (

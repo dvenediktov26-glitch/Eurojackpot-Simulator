@@ -1,3 +1,5 @@
+"""Legacy immutable data models used by the console prototype."""
+
 from dataclasses import dataclass
 from typing import FrozenSet
 

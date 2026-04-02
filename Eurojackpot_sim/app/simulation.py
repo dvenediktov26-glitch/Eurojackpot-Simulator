@@ -1,3 +1,5 @@
+"""Legacy simulation loop from the original command-line version."""
+
 import random
 from collections import Counter
 

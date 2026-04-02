@@ -1,3 +1,11 @@
+/**
+ * Main frontend screen for the Eurojackpot simulator.
+ *
+ * The component keeps the current ticket settings, sends batched buy requests
+ * to the backend, accumulates returned results locally, and renders the main
+ * dashboard cards, chart, and table.
+ */
+
 import { useMemo, useState } from "react";
 import { runSimulation } from "./api/simulation";
 import type {
@@ -5,6 +13,7 @@ import type {
   SimulationResponse,
 } from "./types/simulation";
 
+/** Generate a sorted list of unique random integers for quick ticket creation. */
 function getUniqueRandomNumbers(count: number, min: number, max: number): number[] {
   const numbers = new Set<number>();
 
@@ -16,6 +25,7 @@ function getUniqueRandomNumbers(count: number, min: number, max: number): number
   return Array.from(numbers).sort((a, b) => a - b);
 }
 
+/** Convert text input into a number while preserving an empty field as NaN. */
 function parseNumericInput(value: string): number {
   if (value.trim() === "") {
     return NaN;
@@ -24,6 +34,7 @@ function parseNumericInput(value: string): number {
   return Number(value);
 }
 
+/** Protect rendering code from undefined / null / non-numeric values. */
 function safeNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
@@ -75,6 +86,7 @@ function formatRatio(value: number): string {
   }).format(value);
 }
 
+/** Validate the user ticket before a request is sent to the backend. */
 function validateTicket(mainNumbers: number[], euroNumbers: number[]): string[] {
   const errors: string[] = [];
 
@@ -121,6 +133,7 @@ type AccumulatedResult = {
   prize_classes: PrizeClassSummary[];
 };
 
+/** Create a clean session state used both on first load and after reset. */
 function createEmptyAccumulatedResult(): AccumulatedResult {
   return {
     tickets_played: 0,
@@ -131,6 +144,12 @@ function createEmptyAccumulatedResult(): AccumulatedResult {
   };
 }
 
+/**
+ * Merge the latest batch result into the running frontend session.
+ *
+ * The backend returns per-request summaries. The frontend accumulates them so
+ * the user can keep buying tickets until Reset is pressed.
+ */
 function mergePrizeClasses(
   current: PrizeClassSummary[],
   incoming: PrizeClassSummary[]
@@ -228,6 +247,7 @@ function metricCardStyle(): React.CSSProperties {
   };
 }
 
+/** Render the complete simulator UI and orchestrate user actions. */
 function App() {
   const [marketModel, setMarketModel] = useState<"uniform" | "realistic">("uniform");
   const [ticketsSoldPerDraw, setTicketsSoldPerDraw] = useState(10000000);
@@ -244,6 +264,7 @@ function App() {
     createEmptyAccumulatedResult()
   );
 
+  // Recalculate validation errors only when the ticket changes.
   const ticketErrors = useMemo(
     () => validateTicket(mainNumbers, euroNumbers),
     [mainNumbers, euroNumbers]
@@ -261,17 +282,25 @@ function App() {
     setEuroNumbers(next);
   };
 
+  // Replace the current manual ticket with a quick random ticket.
   const handleRandomTicket = () => {
     setMainNumbers(getUniqueRandomNumbers(5, 1, 50));
     setEuroNumbers(getUniqueRandomNumbers(2, 1, 12));
     setErrorMessage("");
   };
 
+  // Clear the accumulated session while keeping the chosen ticket and settings.
   const handleReset = () => {
     setSessionResult(createEmptyAccumulatedResult());
     setErrorMessage("");
   };
 
+  /**
+   * Buy one batch of tickets.
+   *
+   * The backend simulates `drawsToBuy` draws using the currently selected
+   * ticket. The returned totals are then merged into the session state.
+   */
   const buyTickets = async (drawsToBuy: number) => {
     setErrorMessage("");
 
@@ -326,6 +355,8 @@ function App() {
       ? sessionResult.total_won / sessionResult.total_spent
       : 0;
 
+  // Order chart bars and table rows by total won so the most important classes
+  // appear first.
   const sortedPrizeClasses = [...sessionResult.prize_classes].sort(
     (a, b) => safeNumber(b.actual_total_won) - safeNumber(a.actual_total_won)
   );
@@ -386,6 +417,7 @@ function App() {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Detailed table for the same distribution shown in the chart. */}
             <div style={{ ...cardStyle(), padding: "18px" }}>
               <h2
                 style={{
@@ -469,6 +501,7 @@ function App() {
               </button>
             </div>
 
+            {/* Detailed table for the same distribution shown in the chart. */}
             <div style={{ ...cardStyle(), padding: "18px" }}>
               <h2
                 style={{
@@ -656,6 +689,7 @@ function App() {
               )}
             </div>
 
+            {/* Compact KPI cards with the most intuitive metrics for end users. */}
             <div
               style={{
                 display: "grid",
@@ -756,6 +790,7 @@ function App() {
               </div>
             </div>
 
+            {/* Simple horizontal bar chart inspired by dashboard-style lottery UI. */}
             <div
               style={{
                 ...cardStyle(),
@@ -863,6 +898,7 @@ function App() {
               </div>
             </div>
 
+            {/* Detailed table for the same distribution shown in the chart. */}
             <div style={{ ...cardStyle(), padding: "18px" }}>
               <h2
                 style={{

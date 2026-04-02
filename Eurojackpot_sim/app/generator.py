@@ -1,3 +1,5 @@
+"""Legacy ticket and draw generator used by the console prototype."""
+
 import random
 from app.config import (
     MAIN_NUMBERS_COUNT,

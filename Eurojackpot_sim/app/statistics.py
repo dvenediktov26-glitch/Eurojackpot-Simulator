@@ -1,3 +1,5 @@
+"""Legacy statistics container from the original command-line version."""
+
 from collections import Counter
 from dataclasses import dataclass
 

@@ -1,3 +1,9 @@
+"""Tests for the human-number popularity model.
+
+The popularity model is central to the realistic market mode, so these tests
+check normalization, inversion, and expected ordering.
+"""
+
 from app.core.popularity import (
     LOTTO45_BASE_SELECTION_RATE,
     compute_ticket_popularity_score,

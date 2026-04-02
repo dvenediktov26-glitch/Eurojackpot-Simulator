@@ -1,3 +1,11 @@
+"""Shared-prize model for estimating how many co-winners exist.
+
+When the user wins a prize class, they usually do not receive the full class
+fund. The fund is shared between all winning tickets in that class. This module
+estimates the number of other winners using exact class odds and a simplified
+market-behaviour multiplier.
+"""
+
 from __future__ import annotations
 
 import math
@@ -10,19 +18,21 @@ from app.core.popularity import compute_ticket_popularity_score
 
 DEFAULT_TICKETS_SOLD = 10_000_000
 
+# The market mode controls whether other players are assumed to choose tickets
+# uniformly or according to the realistic popularity model.
 MarketModel = Literal["uniform", "realistic"]
 POPULARITY_EXPONENT = 1.0
 
+# Precompute the exact probability of each prize class once at import time.
 PRIZE_CLASS_PROBABILITIES = get_prize_class_probabilities()
 
 
 def sample_poisson(lam: float, rng: random.Random) -> int:
-    """
-    Выборка из Poisson(lambda).
+    """Sample from a Poisson distribution.
 
-    Для малых lambda используем алгоритм Кнута.
-    Для больших lambda используем нормальное приближение:
-        N(lambda, sqrt(lambda))
+    For small lambda the exact Knuth algorithm is accurate and simple. For large
+    lambda a normal approximation is much faster and sufficiently accurate for
+    the simulation's purpose.
     """
     if lam < 0:
         raise ValueError("Lambda must be non-negative.")
@@ -30,7 +40,6 @@ def sample_poisson(lam: float, rng: random.Random) -> int:
     if lam == 0:
         return 0
 
-    # Для малых значений подходит точный алгоритм Кнута
     if lam < 30:
         limit = math.exp(-lam)
         product = 1.0
@@ -42,7 +51,6 @@ def sample_poisson(lam: float, rng: random.Random) -> int:
 
         return k - 1
 
-    # Для больших lambda используем нормальное приближение
     sampled = rng.gauss(lam, math.sqrt(lam))
     return max(0, int(round(sampled)))
 
@@ -51,6 +59,7 @@ def get_market_popularity_multiplier(
     ticket: Ticket,
     market_model: MarketModel,
 ) -> float:
+    """Return the crowd-size adjustment implied by the market model."""
     if market_model == "uniform":
         return 1.0
 
@@ -67,6 +76,11 @@ def estimate_lambda_for_ticket(
     tickets_sold: int,
     market_model: MarketModel,
 ) -> float:
+    """Estimate the expected number of *other* winners for one class.
+
+    The expected value is: number_of_other_tickets × class_probability ×
+    popularity_multiplier.
+    """
     if prize_class not in PRIZE_CLASS_PROBABILITIES:
         raise ValueError(f"Unknown prize class: {prize_class}")
 
@@ -90,6 +104,7 @@ def estimate_other_winners(
     market_model: MarketModel,
     rng: random.Random,
 ) -> int:
+    """Draw a stochastic number of other winners for one prize class."""
     lam = estimate_lambda_for_ticket(
         prize_class=prize_class,
         ticket=ticket,
@@ -107,6 +122,11 @@ def calculate_shared_payout(
     market_model: MarketModel,
     rng: random.Random,
 ) -> tuple[float, int, float]:
+    """Split a class fund between the user's ticket and estimated co-winners.
+
+    Returns the user's payout, the number of other winners, and the ticket's
+    popularity score for later reporting.
+    """
     if class_fund < 0:
         raise ValueError("class_fund must be non-negative.")
 

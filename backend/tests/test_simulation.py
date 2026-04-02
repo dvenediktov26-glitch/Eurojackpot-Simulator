@@ -1,3 +1,9 @@
+"""Integration-style tests for the main simulation loop.
+
+These tests ensure that the complete model remains reproducible, internally
+consistent, and economically bounded.
+"""
+
 from app.core.models import Ticket
 from app.core.prize_pool import PRIZE_POOL_SHARE, calculate_prize_pool, calculate_ticket_sales
 from app.core.simulation import run_simulation

@@ -1,3 +1,5 @@
+"""Legacy command-line entry point kept for historical reference."""
+
 from app.simulation import run_simulation
 
 

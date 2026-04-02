@@ -1,3 +1,5 @@
+"""Legacy prize-class mapping used by the console prototype."""
+
 PRIZE_CLASSES: dict[tuple[int, int], str] = {
     (5, 2): "Class 1",
     (5, 1): "Class 2",

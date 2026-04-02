@@ -1,3 +1,11 @@
+/**
+ * Thin frontend API wrapper.
+ *
+ * All browser requests to the backend are routed through this module so the
+ * application has a single place to read the production API URL and parse
+ * backend validation errors.
+ */
+
 import type { SimulationRequest, SimulationResponse } from "../types/simulation";
 
 const API_URL = import.meta.env.VITE_API_URL;

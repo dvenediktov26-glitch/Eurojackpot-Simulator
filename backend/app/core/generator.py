@@ -1,3 +1,10 @@
+"""Random ticket and draw generation helpers.
+
+This module provides both uniform and weighted number generation. Weighted
+sampling is used to simulate realistic human behaviour when other players prefer
+certain numbers more than others.
+"""
+
 from __future__ import annotations
 
 import random
@@ -15,9 +22,10 @@ from app.core.popularity import (
     get_anti_popular_main_number_probabilities,
     get_birthday_main_number_probabilities,
     get_main_number_probabilities,
-    get_uniform_main_number_probabilities,
 )
 
+# The frontend no longer exposes strategy switching, but the generator keeps
+# these modes because they are still useful for tests and experiments.
 SUPPORTED_STRATEGIES = {"random", "popular", "birthday", "anti_popular"}
 
 
@@ -27,6 +35,11 @@ def weighted_sample_without_replacement(
     k: int,
     rng: random.Random,
 ) -> list[int]:
+    """Draw k unique values using weighted probabilities.
+
+    The function repeatedly picks one number, removes it from the remaining
+    population, and repeats until k unique numbers have been selected.
+    """
     if len(population) != len(weights):
         raise ValueError("Population and weights must have the same length.")
 
@@ -43,6 +56,7 @@ def weighted_sample_without_replacement(
         if total_weight <= 0:
             raise ValueError("Sum of remaining weights must be positive.")
 
+        # Convert a random value into a point on the cumulative-weight line.
         threshold = rng.random() * total_weight
         cumulative = 0.0
         chosen_index = 0
@@ -53,6 +67,7 @@ def weighted_sample_without_replacement(
                 chosen_index = index
                 break
 
+        # Remove the chosen value so the same number cannot be selected twice.
         selected.append(remaining_population.pop(chosen_index))
         remaining_weights.pop(chosen_index)
 
@@ -60,6 +75,7 @@ def weighted_sample_without_replacement(
 
 
 def generate_main_numbers_uniform(rng: random.Random) -> frozenset[int]:
+    """Generate 5 unique main numbers with equal probability."""
     return frozenset(
         rng.sample(range(MAIN_NUMBERS_MIN, MAIN_NUMBERS_MAX + 1), MAIN_NUMBERS_COUNT)
     )
@@ -69,6 +85,7 @@ def generate_main_numbers_weighted(
     rng: random.Random,
     probabilities: dict[int, float],
 ) -> frozenset[int]:
+    """Generate 5 unique main numbers from a custom probability table."""
     population = list(range(MAIN_NUMBERS_MIN, MAIN_NUMBERS_MAX + 1))
     weights = [probabilities[number] for number in population]
 
@@ -83,21 +100,21 @@ def generate_main_numbers_weighted(
 
 
 def generate_euro_numbers(rng: random.Random) -> frozenset[int]:
+    """Generate the 2 euro numbers uniformly."""
     return frozenset(
         rng.sample(range(EURO_NUMBERS_MIN, EURO_NUMBERS_MAX + 1), EURO_NUMBERS_COUNT)
     )
 
 
 def generate_ticket(rng: random.Random, strategy: str = "random") -> Ticket:
+    """Generate one ticket using the requested strategy."""
     if strategy not in SUPPORTED_STRATEGIES:
         raise ValueError(f"Unsupported strategy: {strategy}")
 
     if strategy == "random":
         main_numbers = generate_main_numbers_uniform(rng)
     elif strategy == "popular":
-        main_numbers = generate_main_numbers_weighted(
-            rng, get_main_number_probabilities()
-        )
+        main_numbers = generate_main_numbers_weighted(rng, get_main_number_probabilities())
     elif strategy == "birthday":
         main_numbers = generate_main_numbers_weighted(
             rng, get_birthday_main_number_probabilities()
@@ -116,6 +133,11 @@ def generate_ticket(rng: random.Random, strategy: str = "random") -> Ticket:
 
 
 def generate_draw(rng: random.Random) -> Draw:
+    """Generate one official-looking draw.
+
+    The draw itself is always uniform because the lottery machine does not care
+    about player preferences.
+    """
     return Draw(
         main_numbers=generate_main_numbers_uniform(rng),
         euro_numbers=generate_euro_numbers(rng),

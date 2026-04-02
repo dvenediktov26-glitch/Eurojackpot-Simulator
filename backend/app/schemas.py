@@ -1,15 +1,25 @@
+"""Pydantic request and response schemas for the public API.
+
+The simulation core uses plain Python dataclasses internally, while the API
+layer uses Pydantic models to validate incoming JSON and document the response
+shape in Swagger.
+"""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class UserTicketInput(BaseModel):
+    """Validated ticket representation received from the frontend."""
+
     main_numbers: list[int] = Field(..., min_length=5, max_length=5)
     euro_numbers: list[int] = Field(..., min_length=2, max_length=2)
 
     @field_validator("main_numbers")
     @classmethod
     def validate_main_numbers(cls, value: list[int]) -> list[int]:
+        """Ensure the 5 main numbers are unique and inside 1..50."""
         if len(set(value)) != 5:
             raise ValueError("Main numbers must be unique.")
         if any(number < 1 or number > 50 for number in value):
@@ -19,6 +29,7 @@ class UserTicketInput(BaseModel):
     @field_validator("euro_numbers")
     @classmethod
     def validate_euro_numbers(cls, value: list[int]) -> list[int]:
+        """Ensure the 2 euro numbers are unique and inside 1..12."""
         if len(set(value)) != 2:
             raise ValueError("Euro numbers must be unique.")
         if any(number < 1 or number > 12 for number in value):
@@ -27,6 +38,8 @@ class UserTicketInput(BaseModel):
 
 
 class SimulationRequest(BaseModel):
+    """Body of the /simulate endpoint."""
+
     draws: int = Field(..., ge=1, le=5_000_000)
     seed: int | None = None
     market_model: Literal["uniform", "realistic"] = "uniform"
@@ -35,6 +48,8 @@ class SimulationRequest(BaseModel):
 
 
 class PrizeClassSummary(BaseModel):
+    """Per-class summary returned to the frontend chart and table."""
+
     key: str
     label: str
     count: int
@@ -44,6 +59,8 @@ class PrizeClassSummary(BaseModel):
 
 
 class SimulationResponse(BaseModel):
+    """Top-level API response consumed by the frontend."""
+
     draws_simulated: int
     tickets_played: int
     winning_tickets: int

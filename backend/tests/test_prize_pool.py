@@ -1,3 +1,9 @@
+"""Tests for prize-pool construction and allocation.
+
+These tests validate that the realistic percentage split and the reserve fund
+add back up to the full prize pool.
+"""
+
 from app.core.prize_pool import (
     CLASS_ALLOCATION_SHARES,
     JACKPOT_CAP,

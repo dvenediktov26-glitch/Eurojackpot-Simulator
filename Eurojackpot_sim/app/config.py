@@ -1,3 +1,5 @@
+"""Legacy configuration constants from the earlier console prototype."""
+
 TICKET_PRICE_EUR = 2.0
 
 MAIN_NUMBERS_COUNT = 5

@@ -1,3 +1,9 @@
+"""Tests for exact combinatorial odds.
+
+The goal is to verify that the probability table is internally consistent and
+that jackpot odds remain the rarest outcome.
+"""
+
 from app.core.odds import get_prize_class_probabilities
 
 

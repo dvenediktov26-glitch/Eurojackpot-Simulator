@@ -1,3 +1,10 @@
+/**
+ * Shared TypeScript types that mirror the backend API schemas.
+ *
+ * Keeping these interfaces aligned with the FastAPI response models helps the
+ * frontend catch breaking API changes during development.
+ */
+
 export interface UserTicketInput {
   main_numbers: number[];
   euro_numbers: number[];

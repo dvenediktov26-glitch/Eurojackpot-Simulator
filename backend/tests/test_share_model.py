@@ -1,3 +1,9 @@
+"""Tests for co-winner estimation and shared payouts.
+
+The shared-prize model is stochastic, so the tests focus on invariants rather
+than exact values.
+"""
+
 import random
 
 from app.core.models import Ticket

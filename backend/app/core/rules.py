@@ -1,3 +1,10 @@
+"""Mapping between match combinations and Eurojackpot prize classes.
+
+The evaluator counts how many main numbers and euro numbers a ticket matched.
+This file converts that pair into the corresponding named prize class.
+"""
+
+# Keys are tuples in the form: (matched_main_numbers, matched_euro_numbers).
 PRIZE_CLASSES: dict[tuple[int, int], str] = {
     (5, 2): "Class 1",
     (5, 1): "Class 2",
