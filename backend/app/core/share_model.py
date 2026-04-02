@@ -1,0 +1,125 @@
+from __future__ import annotations
+
+import math
+import random
+from typing import Literal
+
+from app.core.models import Ticket
+from app.core.odds import get_prize_class_probabilities
+from app.core.popularity import compute_ticket_popularity_score
+
+DEFAULT_TICKETS_SOLD = 10_000_000
+
+MarketModel = Literal["uniform", "realistic"]
+POPULARITY_EXPONENT = 1.0
+
+PRIZE_CLASS_PROBABILITIES = get_prize_class_probabilities()
+
+
+def sample_poisson(lam: float, rng: random.Random) -> int:
+    """
+    Выборка из Poisson(lambda).
+
+    Для малых lambda используем алгоритм Кнута.
+    Для больших lambda используем нормальное приближение:
+        N(lambda, sqrt(lambda))
+    """
+    if lam < 0:
+        raise ValueError("Lambda must be non-negative.")
+
+    if lam == 0:
+        return 0
+
+    # Для малых значений подходит точный алгоритм Кнута
+    if lam < 30:
+        limit = math.exp(-lam)
+        product = 1.0
+        k = 0
+
+        while product > limit:
+            k += 1
+            product *= rng.random()
+
+        return k - 1
+
+    # Для больших lambda используем нормальное приближение
+    sampled = rng.gauss(lam, math.sqrt(lam))
+    return max(0, int(round(sampled)))
+
+
+def get_market_popularity_multiplier(
+    ticket: Ticket,
+    market_model: MarketModel,
+) -> float:
+    if market_model == "uniform":
+        return 1.0
+
+    if market_model == "realistic":
+        popularity_score = compute_ticket_popularity_score(ticket.main_numbers)
+        return popularity_score ** POPULARITY_EXPONENT
+
+    raise ValueError(f"Unsupported market model: {market_model}")
+
+
+def estimate_lambda_for_ticket(
+    prize_class: str,
+    ticket: Ticket,
+    tickets_sold: int,
+    market_model: MarketModel,
+) -> float:
+    if prize_class not in PRIZE_CLASS_PROBABILITIES:
+        raise ValueError(f"Unknown prize class: {prize_class}")
+
+    if tickets_sold < 1:
+        raise ValueError("tickets_sold must be at least 1.")
+
+    class_probability = PRIZE_CLASS_PROBABILITIES[prize_class]
+    popularity_multiplier = get_market_popularity_multiplier(
+        ticket=ticket,
+        market_model=market_model,
+    )
+
+    other_tickets = tickets_sold - 1
+    return other_tickets * class_probability * popularity_multiplier
+
+
+def estimate_other_winners(
+    prize_class: str,
+    ticket: Ticket,
+    tickets_sold: int,
+    market_model: MarketModel,
+    rng: random.Random,
+) -> int:
+    lam = estimate_lambda_for_ticket(
+        prize_class=prize_class,
+        ticket=ticket,
+        tickets_sold=tickets_sold,
+        market_model=market_model,
+    )
+    return sample_poisson(lam, rng)
+
+
+def calculate_shared_payout(
+    prize_class: str,
+    ticket: Ticket,
+    class_fund: float,
+    tickets_sold: int,
+    market_model: MarketModel,
+    rng: random.Random,
+) -> tuple[float, int, float]:
+    if class_fund < 0:
+        raise ValueError("class_fund must be non-negative.")
+
+    popularity_score = compute_ticket_popularity_score(ticket.main_numbers)
+    other_winners = estimate_other_winners(
+        prize_class=prize_class,
+        ticket=ticket,
+        tickets_sold=tickets_sold,
+        market_model=market_model,
+        rng=rng,
+    )
+
+    total_winners = 1 + other_winners
+    payout = class_fund / total_winners
+
+    return payout, other_winners, popularity_score
