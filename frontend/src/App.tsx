@@ -131,13 +131,15 @@ const translations: Record<Language, TranslationSet> = {
     rtp: "RTP",
     yourTicketShort: "Váš tiket",
     simulationResults: "Výsledky simulace",
-    noResultsChart: "Zatím nejsou k dispozici žádné výsledky. Kupte tikety pro zobrazení rozdělení.",
+    noResultsChart:
+      "Zatím nejsou k dispozici žádné výsledky. Kupte tikety pro zobrazení rozdělení.",
     prizeDistribution: "Rozdělení výher",
     category: "Kategorie",
     count: "Počet",
     avgActualPayout: "Průměrná výplata",
     actualTotalWon: "Celkově vyhráno",
-    noResultsTable: "Zatím nejsou k dispozici žádné výsledky. Kupte tikety pro zahájení simulace.",
+    noResultsTable:
+      "Zatím nejsou k dispozici žádné výsledky. Kupte tikety pro zahájení simulace.",
     ticketsLabel: "tiketů",
     disclaimer:
       "Upozornění: Tato webová stránka je simulace vytvořená pouze pro vzdělávací a výzkumné účely. Není spojena s oficiální loterií Eurojackpot a neměla by být používána pro rozhodování o hazardních hrách.",
@@ -172,6 +174,26 @@ function parseNumericInput(value: string): number {
   }
 
   return Number(value);
+}
+
+function parseIntegerInputWithSpaces(value: string): number {
+  const digitsOnly = value.replace(/\s/g, "").replace(/[^\d]/g, "");
+
+  if (digitsOnly === "") {
+    return NaN;
+  }
+
+  return Number(digitsOnly);
+}
+
+function formatIntegerInput(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "";
+  }
+
+  return new Intl.NumberFormat("cs-CZ", {
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function safeNumber(value: unknown, fallback = 0): number {
@@ -308,7 +330,7 @@ function App() {
   const t = translations[language];
 
   const [marketModel, setMarketModel] = useState<MarketModel>("uniform");
-  const [ticketsSoldPerDraw, setTicketsSoldPerDraw] = useState(10000000);
+  const [ticketsSoldPerDraw, setTicketsSoldPerDraw] = useState(1000000);
 
   const [mainNumbers, setMainNumbers] = useState<number[]>([7, 11, 13, 21, 23]);
   const [euroNumbers, setEuroNumbers] = useState<number[]>([1, 2]);
@@ -389,8 +411,7 @@ function App() {
         prize_classes: mergePrizeClasses(prev.prize_classes, res.prize_classes ?? []),
       }));
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t.loadingError;
+      const message = err instanceof Error ? err.message : t.loadingError;
       setErrorMessage(message);
       console.error(err);
     } finally {
@@ -498,8 +519,10 @@ function App() {
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={Number.isNaN(ticketsSoldPerDraw) ? "" : ticketsSoldPerDraw}
-                  onChange={(e) => setTicketsSoldPerDraw(parseNumericInput(e.target.value))}
+                  value={formatIntegerInput(ticketsSoldPerDraw)}
+                  onChange={(e) =>
+                    setTicketsSoldPerDraw(parseIntegerInputWithSpaces(e.target.value))
+                  }
                   className="text-input"
                 />
               </div>
@@ -513,21 +536,35 @@ function App() {
               </div>
 
               <div className="controls-row">
-                <button onClick={() => buyTickets(1)} disabled={loading} className="primary-button">
+                <button
+                  onClick={() => buyTickets(1)}
+                  disabled={loading}
+                  className="primary-button"
+                >
                   {t.buy1}
                 </button>
-                <button onClick={() => buyTickets(10)} disabled={loading} className="primary-button">
+                <button
+                  onClick={() => buyTickets(10)}
+                  disabled={loading}
+                  className="primary-button"
+                >
                   {t.buy10}
                 </button>
-                <button onClick={() => buyTickets(100)} disabled={loading} className="primary-button">
+                <button
+                  onClick={() => buyTickets(100)}
+                  disabled={loading}
+                  className="primary-button"
+                >
                   {t.buy100}
                 </button>
 
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={Number.isNaN(customBuyAmount) ? "" : customBuyAmount}
-                  onChange={(e) => setCustomBuyAmount(parseNumericInput(e.target.value))}
+                  value={formatIntegerInput(customBuyAmount)}
+                  onChange={(e) =>
+                    setCustomBuyAmount(parseIntegerInputWithSpaces(e.target.value))
+                  }
                   className="custom-buy-input"
                 />
 
@@ -673,9 +710,7 @@ function App() {
           </main>
         </div>
 
-        <footer className="footer-disclaimer">
-          {t.disclaimer}
-        </footer>
+        <footer className="footer-disclaimer">{t.disclaimer}</footer>
       </div>
     </div>
   );
