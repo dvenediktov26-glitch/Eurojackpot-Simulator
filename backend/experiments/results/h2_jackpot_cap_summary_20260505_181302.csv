@@ -1,0 +1,4 @@
+experiment,scenario,label_cs,description,jackpot_cap,draws,repetitions,mean_average_jackpot_available,mean_max_jackpot_fund_observed,mean_payout_std_dev,mean_upper_tier_payout_std_dev,mean_average_rollover_length,mean_average_time_to_cap,mean_jackpot_hits,mean_jackpot_cap_hits,mean_overflow_to_class2,mean_overflow_to_class3
+h2_jackpot_cap,cap_90m,90 mil. €,Nižší strop jackpotu 90 mil. €.,90000000.0,1000,200,46763145.0,90000000.0,21448610.26739709,21448610.26739709,6.052229710895881,10.0,164.935,193.485,1447830000.0,0.0
+h2_jackpot_cap,cap_120m,120 mil. €,Výchozí strop jackpotu 120 mil. €.,120000000.0,1000,200,50090160.0,120000000.0,24086577.44265372,24086577.44265372,6.056131587489927,14.0,164.725,92.375,783375000.0,0.0
+h2_jackpot_cap,cap_150m,150 mil. €,Vyšší strop jackpotu 150 mil. €.,150000000.0,1000,200,52467825.0,150000000.0,25821129.143285383,25821129.143285383,6.154647662231292,17.0,163.18,55.855,446955000.0,0.0
